@@ -1,0 +1,17 @@
+{
+  "name": "zpy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "ts-node node_modules/jasmine/bin/jasmine"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/jasmine": "^5.1.4",
+    "jasmine": "^5.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  }
+}
