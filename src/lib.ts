@@ -1,112 +1,69 @@
+import { Play } from './Play';
+import { Card, BasicSuit, getSuit } from './Card';
+import { Matcher } from './Matcher';
+
 const RULES = {
     wraparound: true,
 };
 
-const SUITS = ['S', 'H', 'D', 'C', 'J'] as const;
-type Suit = typeof SUITS[number];
-const NUMS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'S', 'B'] as const;
-type Num = typeof NUMS[number];
+export function selectableCards(hand: Card[], selection: Card[], trick: Play[], declared: Card) {
+    const n = trick.reduce((t, p) => t + p.size, 0);
+    const suit: BasicSuit | 'T' = trick[0].getSuit(declared);
+    const suitedCards = hand.filter(card => getSuit(card, declared) === suit);
 
-const BASIC_NUMS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
-type BasicNum = typeof BASIC_NUMS[number];
-const BASIC_SUITS = ['S', 'H', 'D', 'C'] as const;
-type BasicSuit = typeof BASIC_SUITS[number];
-type Card = `${BasicNum}${BasicSuit}` | 'SJ' | 'BJ';
+    if (suitedCards.length > n) {
+        const need = Play.sortPlays(trick);
+        const responseShape = [];
+        const matches = new Matcher(suitedCards, trick[trick.length - 1], declared);
+        while (need.length) {
+            const subTrick = need.pop();
 
-const NUM_NAMES = {
-    '2': 'Two',
-    '3': 'Three',
-    '4': 'Four',
-    '5': 'Five',
-    '6': 'Six',
-    '7': 'Seven',
-    '8': 'Eight',
-    '9': 'Nine',
-    '10': 'Ten',
-    'J': 'Jack',
-    'Q': 'Queen',
-    'K': 'King',
-    'A': 'Ace',
-    'S': 'Small',
-    'B': 'Big'
-};
-const SUIT_NAMES = {
-    'S': 'Spades',
-    'H': 'Hearts',
-    'D': 'Diamonds',
-    'C': 'Clubs',
-    'J': 'Joker'
-}
-
-export function parseCard(card: Card): [Num, Suit] {
-    return [card.substring(0, card.length - 1) as Num, card.charAt(card.length - 1) as Suit];
-}
-
-export function cardName(card: Card) {
-    const [num, suit] = parseCard(card);
-    return `${NUM_NAMES[num]}${suit !== 'J' || ' of '}${SUIT_NAMES[suit]}`
-}
-
-export function selectableCards(hand: Card[], selection: Throw, trick: Throw) {
-    const trickCopy = new Set([...trick]);
-}
-
-export class Play {
-    constructor(private c: Card, private m?: number, private l?: number) {
-        if (l && m && l > 1 && m == 1) {
-            throw new TypeError('Cannot have tractors of multiplicity 1.')
         }
+    } else if (selection.length < n) {
+        return hand;
     }
 
-    isTrump(declaredCard: Card) {
-        const [num, suit] = parseCard(this.c);
-        const [declaredNum, declaredSuit] = parseCard(declaredCard);
-        return suit === 'J' || suit === declaredSuit || num === declaredNum;
-    }
+    // Determine # suited cards
+    // if enough, disable all non suited cards, proceed with forcing alg
+    // else if some suited cards, enable all other cards until enough non suited are selected
+    // else allow any, keep in mind trump can still win if matching pattern
 
-    getCards(declaredCard: Card) {
-        const [num, suit] = parseCard(this.c);
-        const [declaredNum, declaredSuit] = parseCard(declaredCard);
-        const cards: Card[] = [];
-        let curNum = NUMS.indexOf(num);
-        let curSuit = suit;
-
-        if (this.l && this.l > 1 && NUMS[curNum] === declaredNum && curSuit !== declaredSuit) {
-            throw new RangeError(`Cannot make tractor from ${NUMS[curNum]}${curSuit}.`);
-        }
-
-        for (let i = 0; i < (this.l ?? 1); i++) {
-            if (curNum >= NUMS.length) {
-                throw new RangeError('Play goes out of range.');
-            }
-            for (let j = 0; j < (this.m ?? 1); j++) {
-                cards.push(`${NUMS[curNum]}${curSuit}` as Card);
-            }
-            if (`${NUMS[curNum]}${curSuit}` === declaredCard) {
-                curNum = NUMS.indexOf('S');
-                curSuit = 'J';
-            } else if (curNum === NUMS.indexOf('A')) {
-                if (curSuit === declaredSuit) {
-                    curNum = NUMS.indexOf(declaredNum);
-                } else if (i === 0 && RULES.wraparound) {
-                    curNum = declaredNum === '2' ? 1 : 0;
-                } else if (i != (this.l ?? 1) - 1) {
-                    throw new RangeError('Play goes out of range.');
-                }
-            } else if (NUMS[curNum + 1] === declaredNum) {
-                if (curSuit === declaredSuit && NUMS[curNum] === 'K') {
-                    curNum++;
-                } else if (curNum + 2 >= NUMS.indexOf('S') && i != (this.l ?? 1) - 1) {
-                    throw new RangeError('Play goes out of range.');
-                } else {
-                    curNum += 2;
-                }
-            } else {
-                curNum++;
-            }
-        }
-        return cards;
-    }
+    // forcing alg
+    // const need = copy trick
+    // const responseShape = [];
+    // const suitedCards = hand.filter(SAMESUITASTRICK)
+    // while need has stuff:
+    //   subtrick = need.popend()
+    //   const bestPlay = matchPlay(suitedCards, subtrick, declared)
+    //   responseShape.push(bestPlay)
+    //   needs.push(...computeNeeds(subtrick.m, subtrick.l, bestPlay.m, bestPlay.l))
+    // 
 }
 
-type Throw = Set<Play>;
+/**
+ * Assumes (m,l) fits (M,L) shape.
+ * Example: 3, 3, 2, 2 => [[3, 1],[1,1],[1,1]]
+ *  AAA xxx
+ *  KKK y33
+ *  QQQ z44  -> z is separate bc [1,2] shape is invalid
+ * 
+ * Example: 4, 4, 2, 2 => [[4,2],[2,2]]
+ *  AAAA xxxx
+ *  KKKK xxxx
+ *  QQQQ yy44
+ *  JJJJ yy33
+ */
+export function computeNeeds(M: number, L: number, m: number, l: number) {
+    const needs = [];
+    if (L - l > 0) {
+        needs.push([M, L - l]);
+    }
+    if (M - m === 1) {
+        for (let i = 0; i < l; i++) {
+            needs.push([1, 1]);
+        }
+    } else if (M - m > 0) {
+        needs.push([M - m, l]);
+    }
+    return needs;
+}
