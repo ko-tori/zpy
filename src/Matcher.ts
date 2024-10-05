@@ -1,20 +1,52 @@
 import { Card } from './Card';
 import { Play } from './Play';
 
+interface Shape {
+    m: number;
+    l: number;
+}
+type Possibility = Play | Shape;
+
+/**
+ * Assumes (m,l) fits (M,L) shape.
+ * Example: 3, 3, 2, 2 => [[3, 1],[1,1],[1,1]]
+ *  AAA xxx
+ *  KKK y33
+ *  QQQ z44  -> z is separate bc [1,2] shape is invalid
+ * 
+ * Example: 4, 4, 2, 2 => [[4,2],[2,2]]
+ *  AAAA xxxx
+ *  KKKK xxxx
+ *  QQQQ yy44
+ *  JJJJ yy33
+ */
+export function computeNeeds(M: number, L: number, m: number, l: number) {
+    const needs = [];
+    if (L - l > 0) {
+        needs.push([M, L - l]);
+    }
+    if (M - m === 1) {
+        for (let i = 0; i < l; i++) {
+            needs.push([1, 1]);
+        }
+    } else if (M - m > 0) {
+        needs.push([M - m, l]);
+    }
+    return needs;
+}
+
 export class Matcher {
-    private possiblePlays;
+    private handStructure: Map<Card, number>[][];
+    private trick: Play[];
 
-    constructor(hand: Card[], trick: Play, declared: Card) {
-        const dp: Map<Card, number>[][] = Array(trick.multiplicity - 1).fill(null).map(() => Array(trick.length).fill([]));
+    constructor(private counts: Map<Card, number>, trick: Play[], private declared: Card) {
+        this.trick = Play.sortPlays(trick);
+        const maxTrick = this.trick[this.trick.length - 1];
+        const dp: Map<Card, number>[][] = Array(maxTrick.multiplicity - 1).fill(null).map(() => Array(maxTrick.length).fill([]));
 
-        const counts = new Map<Card, number>();
-        hand.forEach(card => {
-            counts.set(card, 1 + (counts.get(card) ?? 0));
-        });
-
-        for (let m = 2; m <= trick.multiplicity; m++) {
+        for (let m = 2; m <= maxTrick.multiplicity; m++) {
             const entry = new Map<Card, number>();
-            counts.forEach((count, card) => {
+            this.counts.forEach((count, card) => {
                 if (count >= m) {
                     entry.set(card, Math.floor(count / m));
                 }
@@ -22,37 +54,103 @@ export class Matcher {
             dp[m - 2][0] = entry;
         }
 
-        for (let m = 2; m <= trick.multiplicity; m++) {
+        for (let m = 2; m <= maxTrick.multiplicity; m++) {
             const first = dp[m - 2][0];
-            for (let l = 2; l <= trick.length; l++) {
+            for (let l = 2; l <= maxTrick.length; l++) {
                 const prev = dp[m - 2][l - 2];
                 const entry = new Map<Card, number>();
                 prev.forEach((count, card) => {
-                    const nextCard = new Play(card, m, l - 1).nextLargest(declared);
+                    const nextCard = new Play(card, m, l - 1).nextLargest(this.declared);
                     if (!nextCard) return;
-                    if (first.has(nextCard)) {
-                        entry.set(card, 1 + (entry.get(card) ?? 0));
+                    const nextCardCt = first.get(nextCard);
+                    if (nextCardCt) {
+                        entry.set(card, Math.min(count, nextCardCt));
                     }
                 });
                 dp[m - 2][l - 1] = entry;
             }
         }
 
-        this.possiblePlays = dp;
-        console.log(dp)
+        this.handStructure = dp;
     }
 
-    removePlay(play: Play) {
-        const entry = this.getEntry(play.multiplicity, play.length);
-        const count = entry.get(play.card);
-        if (!count) {
-            throw new Error('Play not found');
+    getPossibilities() {
+        const temp = this.trick[this.trick.length - 1];
+        // console.log(`getting possible plays for ${temp.multiplicity}x${temp.length}`);
+        if (temp.multiplicity <= 2 && temp.length === 1) {
+            return [this.trick.map(p => ({ m: p.multiplicity, l: p.length }))];
         }
-
+        const plays: Possibility[][] = [];
+        const [m, l] = this.getBest();
+        // console.log('best size', m, l);
+        this.getEntry(m, l).forEach((_, card) => {
+            // console.log(card, m, l)
+            // TODO: function which efficiently removes a play from the structure
+            const play = new Play(card, m, l);
+            const newCounts = new Map(this.counts);
+            play.getCards(this.declared).forEach(cardToRemove => {
+                const curCount = newCounts.get(cardToRemove);
+                if (!curCount) {
+                    throw new Error(`Cannot remove card ${card}.`);
+                } else if (curCount === 1) {
+                    newCounts.delete(card);
+                } else {
+                    newCounts.set(cardToRemove, curCount - 1);
+                }
+            });
+            const newTrick = this.trick.map(trick => trick.copy());
+            const targetPlay = newTrick.pop();
+            if (!targetPlay) {
+                // console.log('targets ran out')
+                return [];
+            }
+            computeNeeds(targetPlay.multiplicity, targetPlay.length, m, l).forEach(([m2, l2]) => {
+                newTrick.push(new Play(targetPlay.card, m2, l2));
+            });
+            // console.log('newTrick', newTrick)
+            if (newTrick.length === 0) {
+                // console.log('returning', play);
+                return plays.push([play]);
+            } else {
+                const newMatcher = new Matcher(newCounts, newTrick, this.declared);
+                const possibilities = newMatcher.getPossibilities();
+                // console.log('possibilities', possibilities);
+                plays.push(...possibilities.map(possibility => [play as Possibility].concat(possibility)));
+            }
+        });
+        // console.log(`found possible plays for ${temp.multiplicity}x${temp.length}`, plays);
+        const minSize = Math.min(...plays.map(p => p.length));
+        return plays.filter(p => p.length === minSize);
     }
 
     private getEntry(m: number, l: number) {
-        return this.possiblePlays[m - 2][l - 1];
+        return this.handStructure[m - 2][l - 1];
+    }
+
+    private getBest() {
+        // console.log('getting best', this.trick[this.trick.length - 1])
+        let bestM = 1, bestL = 1;
+        for (let m = this.handStructure.length + 1; m >= 2; m--) {
+            for (let l = this.handStructure[0].length; l >= 1; l--) {
+                // console.log(this.getEntry(m, l).size, bestM, bestL, m, l)
+                if (this.getEntry(m, l).size && (m * l > bestM * bestL || (bestM * bestL === m * l && m > bestM))) {
+                    bestM = m;
+                    bestL = l;
+                }
+            }
+        }
+        return [bestM, bestL];
+    }
+
+    static fromHand(hand: Card[], trick: Play[], declared: Card) {
+        return new Matcher(this.countHand(hand), trick, declared);
+    }
+
+    static countHand(hand: Card[]) {
+        const counts = new Map<Card, number>();
+        hand.forEach(card => {
+            counts.set(card, 1 + (counts.get(card) ?? 0));
+        });
+        return counts;
     }
 }
-new Matcher(['3H', '3H', '4H', '4H', '4H', '4H', '5H', '5H', '7H', '7H', '7H', '8H', '8H', '8H', 'KH', 'AH'], new Play('10H', 3, 3), '2C')

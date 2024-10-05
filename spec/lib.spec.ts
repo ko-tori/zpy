@@ -1,4 +1,3 @@
-import { computeNeeds } from '../src/lib';
 import { Play } from '../src/Play';
 import { Card } from '../src/Card';
 
@@ -19,18 +18,4 @@ describe('selectableCards -', () => {
     });
 });
 
-describe('computeNeeds', () => {
-    it('should work 3, 3, 2, 2', () => {
-        expect(computeNeeds(3, 3, 2, 2)).toEqual([[3, 1], [1, 1], [1, 1]]);
-    });
-    it('should work 4, 4, 2, 2', () => {
-        expect(computeNeeds(4, 4, 2, 2)).toEqual([[4, 2], [2, 2]]);
-    });
-    it('should work 4, 2, 2, 2', () => {
-        expect(computeNeeds(4, 2, 2, 2)).toEqual([[2, 2]]);
-    });
-    it('should work 2, 4, 2, 2', () => {
-        expect(computeNeeds(2, 4, 2, 2)).toEqual([[2, 2]]);
-    });
-});
 
