@@ -32,11 +32,11 @@ export class Play {
     }
 
     /** For tractors, the next card which would extend the tractor. */
-    nextLargest(declared: Card) {
+    nextLargest(declared: Card, wrap = false) {
         let c: Card | null = this.c;
         for (let i = 0; i < this.length; i++) {
             if (!c) return null;
-            c = nextLargest(c, declared);
+            c = nextLargest(c, declared, wrap);
         }
         return c;
     }

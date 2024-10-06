@@ -69,4 +69,32 @@ describe('getPossibilities', () => {
             [new Play('4C', 3, 2), new Play('9C', 2, 2), { m: 2, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }],
         ]);
     });
+    it('wraparound tractor', () => {
+        const m = Matcher.fromHand(createSuitedHand('AA22'), [new Play('KS', 2, 2)], '3S');
+        expect(m.getPossibilities()).toEqual([[new Play('AC', 2, 2)]]);
+    });
+    it('skip tractor', () => {
+        const m = Matcher.fromHand(createSuitedHand('2244'), [new Play('KS', 2, 2)], '3S');
+        expect(m.getPossibilities()).toEqual([[new Play('2C', 2, 2)]]);
+    });
+    it('skip wraparound tractor', () => {
+        const m = Matcher.fromHand(createSuitedHand('AA33'), [new Play('KS', 2, 2)], '2S');
+        expect(m.getPossibilities()).toEqual([[new Play('AC', 2, 2)]]);
+    });
+    it('trump tractors', () => {
+        const m = Matcher.fromHand(createSuitedHand('4467'), [new Play('2S', 2, 2)], '2S');
+        expect(m.getPossibilities()).toEqual([[{ m: 2, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }]]);
+    });
+    it('trump tractors 3x3', () => {
+        const m = Matcher.fromHand(['2S', '2S', '2S', 'SJ', 'SJ', 'SJ', 'BJ', 'BJ', 'BJ'], [new Play('3S', 3, 3)], '2S');
+        expect(m.getPossibilities()).toEqual([[new Play('2S', 3, 3)]]);
+    });
+    it('trump tractors 3x3, 2x3', () => {
+        const m = Matcher.fromHand(['7S', '6S', '6S', '2S', '2S', 'SJ', 'SJ', 'BJ', 'BJ'], [new Play('3S', 3, 3)], '2S');
+        expect(m.getPossibilities()).toEqual([[new Play('2S', 2, 3), { m: 1, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }]]);
+    });
+    it('trump tractors 3x3, 3x2', () => {
+        const m = Matcher.fromHand(['7S', '6S', '6S', 'SJ', 'SJ', 'SJ', 'BJ', 'BJ', 'BJ'], [new Play('3S', 3, 3)], '2S');
+        expect(m.getPossibilities()).toEqual([[new Play('SJ', 3, 2), { m: 2, l: 1 }, { m: 1, l: 1 }]]);
+    });
 });

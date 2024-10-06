@@ -1,3 +1,5 @@
+import { RULES } from './rules';
+
 const SUITS = ['S', 'H', 'D', 'C', 'J'] as const;
 type Suit = typeof SUITS[number];
 const NUMS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'S', 'B'] as const;
@@ -51,6 +53,7 @@ export function cardName(card: Card) {
 
 /** Finds the next largest card for the purpose of tractors. */
 export function nextLargest(card: Card, declared: Card, wrap = false): Card | null {
+    if (!RULES.wraparound) wrap = false;
     const [num, suit] = parseCard(card);
     const [big, _] = parseCard(declared);
 
