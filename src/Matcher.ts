@@ -76,49 +76,98 @@ export class Matcher {
 
     getPossibilities() {
         const temp = this.trick[this.trick.length - 1];
-        // console.log(`getting possible plays for ${temp.multiplicity}x${temp.length}`);
-        if (temp.multiplicity <= 2 && temp.length === 1) {
-            return [this.trick.map(p => ({ m: p.multiplicity, l: p.length }))];
+        console.log(`getting possible plays for ${temp.multiplicity}x${temp.length}`);
+        if (this.trick.length === 1 && temp.multiplicity === 1 && temp.length === 1) {
+            console.log('returning single')
+            if (this.counts.size) return [[{ m: 1, l: 1 }]];
+            else return [];
         }
         const plays: Possibility[][] = [];
         const [m, l] = this.getBest();
-        // console.log('best size', m, l);
-        this.getEntry(m, l).forEach((_, card) => {
-            // console.log(card, m, l)
-            // TODO: function which efficiently removes a play from the structure
-            const play = new Play(card, m, l);
+        console.log('best size', m, l);
+        // TODO, deduplicate this stuff
+        if (m <= 2 && l === 1) {
+            const play = { m, l };
             const newCounts = new Map(this.counts);
-            play.getCards(this.declared).forEach(cardToRemove => {
-                const curCount = newCounts.get(cardToRemove);
-                if (!curCount) {
-                    throw new Error(`Cannot remove card ${card}.`);
-                } else if (curCount === 1) {
-                    newCounts.delete(card);
-                } else {
-                    newCounts.set(cardToRemove, curCount - 1);
+            let found = false;
+            let lastCard, lastCount;
+            for (let i = 0; i < l; i++) {
+                for (let [card, count] of newCounts) {
+                    if (count === m) {
+                        newCounts.delete(card);
+                        found = true;
+                        break;
+                    }
+                    if (count > m) {
+                        lastCard = card;
+                        lastCount = count;
+                    }
                 }
-            });
+            }
+            if (!found) {
+                if (lastCard && lastCount) {
+                    newCounts.set(lastCard, lastCount - m);
+                } else {
+                    throw new Error(`Failed to find candidate for ${m}x${l}.`);
+                }
+            }
             const newTrick = this.trick.map(trick => trick.copy());
             const targetPlay = newTrick.pop();
             if (!targetPlay) {
-                // console.log('targets ran out')
+                console.log('targets ran out')
                 return [];
             }
             computeNeeds(targetPlay.multiplicity, targetPlay.length, m, l).forEach(([m2, l2]) => {
                 newTrick.push(new Play(targetPlay.card, m2, l2));
             });
-            // console.log('newTrick', newTrick)
+            console.log('newTrick', newTrick)
             if (newTrick.length === 0) {
-                // console.log('returning', play);
-                return plays.push([play]);
+                console.log('returning', play);
+                plays.push([play]);
             } else {
                 const newMatcher = new Matcher(newCounts, newTrick, this.declared);
                 const possibilities = newMatcher.getPossibilities();
-                // console.log('possibilities', possibilities);
+                console.log('possibilities', possibilities);
                 plays.push(...possibilities.map(possibility => [play as Possibility].concat(possibility)));
             }
-        });
-        // console.log(`found possible plays for ${temp.multiplicity}x${temp.length}`, plays);
+        } else {
+            this.getEntry(m, l).forEach((_, card) => {
+                console.log(card, m, l)
+                // TODO: function which efficiently removes a play from the structure
+                const play = new Play(card, m, l);
+                const newCounts = new Map(this.counts);
+                play.getCards(this.declared).forEach(cardToRemove => {
+                    const curCount = newCounts.get(cardToRemove);
+                    if (!curCount) {
+                        throw new Error(`Cannot remove card ${card}.`);
+                    } else if (curCount === 1) {
+                        newCounts.delete(card);
+                    } else {
+                        newCounts.set(cardToRemove, curCount - 1);
+                    }
+                });
+                const newTrick = this.trick.map(trick => trick.copy());
+                const targetPlay = newTrick.pop();
+                if (!targetPlay) {
+                    console.log('targets ran out')
+                    return [];
+                }
+                computeNeeds(targetPlay.multiplicity, targetPlay.length, m, l).forEach(([m2, l2]) => {
+                    newTrick.push(new Play(targetPlay.card, m2, l2));
+                });
+                console.log('newTrick', newTrick)
+                if (newTrick.length === 0) {
+                    console.log('returning', play);
+                    plays.push([play]);
+                } else {
+                    const newMatcher = new Matcher(newCounts, newTrick, this.declared);
+                    const possibilities = newMatcher.getPossibilities();
+                    console.log('possibilities', possibilities);
+                    plays.push(...possibilities.map(possibility => [play as Possibility].concat(possibility)));
+                }
+            });
+        }
+        console.log(`found possible plays for ${temp.multiplicity}x${temp.length}`, plays);
         const minSize = Math.min(...plays.map(p => p.length));
         return plays.filter(p => p.length === minSize);
     }

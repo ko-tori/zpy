@@ -21,14 +21,13 @@ describe('getPossibilities', () => {
     it('should work (3x1, 2x1)', () => {
         const m = Matcher.fromHand(createSuitedHand('33455'), [new Play('10C', 3, 1)], '2S');
         expect(m.getPossibilities()).toEqual([
-            [new Play('3C', 2, 1), { m: 1, l: 1 }],
-            [new Play('5C', 2, 1), { m: 1, l: 1 }]
+            [{ m: 2, l: 1 }, { m: 1, l: 1 }]
         ]);
     });
     it('should work (3+1+1, 2x1)', () => {
         const m = Matcher.fromHand(createSuitedHand('33456'), [new Play('AC', 3, 1), new Play('KC', 1, 1), new Play('QC', 1, 1)], '2S');
         expect(m.getPossibilities()).toEqual([
-            [new Play('3C', 2, 1), { m: 1, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }]
+            [{ m: 2, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }]
         ]);
     });
     it('should work (3x3, 3x2)', () => {
@@ -57,5 +56,17 @@ describe('getPossibilities', () => {
         expect(m.getPossibilities()).toEqual([
             [new Play('6C', 5), new Play('3C', 2, 2)]
         ]);
-    })
+    });
+    it('complex example', () => {
+        const m = Matcher.fromHand(createSuitedHand('3344455556777899TT'), [new Play('JC', 4, 4)], '2S');
+        expect(m.getPossibilities()).toEqual([
+            [new Play('4C', 3, 2), new Play('9C', 2, 2), { m: 2, l: 1 }, { m: 2, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }]
+        ]);
+    });
+    it('complex example 2', () => {
+        const m = Matcher.fromHand(createSuitedHand('33444555567899TT'), [new Play('JC', 4, 4)], '2S');
+        expect(m.getPossibilities()).toEqual([
+            [new Play('4C', 3, 2), new Play('9C', 2, 2), { m: 2, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }, { m: 1, l: 1 }],
+        ]);
+    });
 });
