@@ -14,9 +14,9 @@ export function sortPossibilities(possibilities: Possibility[]) {
         const m2 = p2 instanceof Play ? p2.multiplicity : p2.m;
         const l1 = p1 instanceof Play ? p1.length : p1.l;
         const l2 = p2 instanceof Play ? p2.length : p2.l;
-        const comp = m1 * l1 - m2 * l2 || m1 - m2;
+        const comp = m2 * l2 - m1 * l1 || m2 - m1;
         if (comp === 0 && p1 instanceof Play && p2 instanceof Play) {
-            return compareCards(p1.card, p2.card);
+            return compareCards(p2.card, p1.card);
         }
         return comp;
     });
