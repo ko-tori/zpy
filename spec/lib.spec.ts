@@ -36,6 +36,12 @@ describe('selectableCards -', () => {
                 expect(selectableCards(hand, ['3H', '3H', '4H', '4H', '5H', '5H'], trick, declared)).toEqual(
                     new Set(['5H', '7H', 'KH', 'AH'])
                 );
+                expect(selectableCards(hand, ['3H', '3H', '4H', '5H', '5H', '7H', 'KH', 'AH'], trick, declared)).toEqual(
+                    new Set(['4H'])
+                );
+                expect(selectableCards(hand, ['3H', '3H', '4H', '5H', '5H', '5H', 'KH', 'AH'], trick, declared)).toEqual(
+                    new Set(['4H'])
+                );
             });
             it('should disable extra single', () => {
                 expect(selectableCards(hand, ['3H', '3H', '4H', '4H', '5H', '5H', '7H', 'KH', 'AH'], trick, declared)).toEqual(new Set([]));

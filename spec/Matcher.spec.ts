@@ -97,4 +97,18 @@ describe('getPossibilities', () => {
         const m = Matcher.fromHand(['7S', '6S', '6S', 'SJ', 'SJ', 'SJ', 'BJ', 'BJ', 'BJ'], [new Play('3S', 3, 3)], '2S');
         expect(m.getPossibilities()).toEqual([[new Play('SJ', 3, 2), { m: 2, l: 1 }, { m: 1, l: 1 }]]);
     });
+    describe('initial throw -', () => {
+        it('should work if throw size is a multiple of the number of decks', () => {
+            const m = Matcher.initialThrow(['7S', '6S', '6S', 'SJ', 'SJ', 'SJ', 'BJ', 'BJ', 'BJ'], 3, '2S');
+            expect(m.getPossibilities()).toEqual([[new Play('SJ', 3, 2), new Play('6S', 2), new Play('7S')]]);
+        });
+        it('should work if throw size is not a multiple of the number of decks', () => {
+            const m = Matcher.initialThrow(['5S', '7S', '6S', '6S', 'SJ', 'SJ', 'SJ', 'BJ', 'BJ', 'BJ'], 3, '2S');
+            expect(m.getPossibilities()).toEqual([[new Play('SJ', 3, 2), new Play('6S', 2), new Play('7S'), new Play('5S')]]);
+        });
+        it('another example', () => {
+            const m = Matcher.initialThrow(['6S', '7S', '6S', '6S', 'SJ', 'SJ', 'SJ', 'BJ', 'BJ', 'BJ'], 3, '2S');
+            expect(m.getPossibilities()).toEqual([[new Play('SJ', 3, 2), new Play('6S', 3), new Play('7S')]]);
+        });
+    })
 });

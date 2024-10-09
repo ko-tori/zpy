@@ -67,7 +67,7 @@ export class Matcher {
     private handStructure: Map<Card, number>[][];
     private trick: Play[];
 
-    constructor(private counts: Map<Card, number>, trick: Play[], private declared: Card) {
+    constructor(private counts: Map<Card, number>, trick: Play[], private declared: Card, private initial = false) {
         this.trick = Play.sortPlays(trick);
         const maxTrick = this.trick[this.trick.length - 1];
         const dp: Map<Card, number>[][] = Array(maxTrick.multiplicity - 1).fill(null).map(() => Array(maxTrick.length).fill([]));
@@ -105,16 +105,17 @@ export class Matcher {
     getPossibilities() {
         const temp = this.trick[this.trick.length - 1];
         // console.log(`getting possible plays for ${temp.multiplicity}x${temp.length}`);
-        if (this.trick.length === 1 && temp.multiplicity === 1 && temp.length === 1) {
-            // console.log('returning single')
-            if (this.counts.size) return [[{ m: 1, l: 1 }]];
-            else return [];
+        if (!this.counts.size && this.initial) {
+            return [[]];
+        }
+        if (this.trick.length === 1 && temp.multiplicity === 1 && temp.length === 1 && !this.initial) {
+            // console.log('returning single', this.counts.size)
+            return this.counts.size ? [[{ m: 1, l: 1 }]] : [];
         }
         const plays: Possibility[][] = [];
         const [m, l] = this.getBest();
         // console.log('best size', m, l);
-        // TODO, deduplicate this stuff
-        if (m <= 2 && l === 1) {
+        if (m <= 2 && l === 1 && !this.initial) {
             const play = { m, l };
             const newCounts = new Map(this.counts);
             let found = false;
@@ -139,11 +140,10 @@ export class Matcher {
                     throw new Error(`Failed to find candidate for ${m}x${l}.`);
                 }
             }
-            plays.push(...this.possibilitiesHelper(play, m, l, newCounts))
+            plays.push(...this.possibilitiesHelper(play, m, l, newCounts));
         } else {
-            this.getEntry(m, l).forEach((_, card) => {
-                // console.log(card, m, l)
-                // TODO: function which efficiently removes a play from the structure
+            for (const [card, _] of this.getEntry(m, l)) {
+                // console.log(card, m, l);
                 const play = new Play(card, m, l);
                 const newCounts = new Map(this.counts);
                 play.getCards(this.declared).forEach(cardToRemove => {
@@ -151,20 +151,24 @@ export class Matcher {
                     if (!curCount) {
                         throw new Error(`Cannot remove card ${card}.`);
                     } else if (curCount === 1) {
-                        newCounts.delete(card);
+                        newCounts.delete(cardToRemove);
                     } else {
                         newCounts.set(cardToRemove, curCount - 1);
                     }
                 });
-                plays.push(...this.possibilitiesHelper(play, m, l, newCounts))
-            });
+                plays.push(...this.possibilitiesHelper(play, m, l, newCounts));
+            }
         }
         // console.log(`found possible plays for ${temp.multiplicity}x${temp.length}`, plays);
         const minSize = Math.min(...plays.map(p => p.length));
-        return plays.filter(p => p.length === minSize);
+        const possibilities = plays.filter(p => p.length === minSize);
+        return this.initial ? [Play.sortPlays(possibilities[0] as Play[]).reverse()] : possibilities;
     }
 
     private getEntry(m: number, l: number) {
+        if (m === 1 && l === 1) {
+            return this.counts;
+        }
         return this.handStructure[m - 2][l - 1];
     }
 
@@ -198,7 +202,7 @@ export class Matcher {
             // console.log('returning', play);
             return [[play]];
         } else {
-            const newMatcher = new Matcher(newCounts, newTrick, this.declared);
+            const newMatcher = new Matcher(newCounts, newTrick, this.declared, this.initial);
             const possibilities = newMatcher.getPossibilities();
             // console.log('possibilities', possibilities);
             return possibilities.map(possibility => [play as Possibility].concat(possibility));
@@ -207,5 +211,12 @@ export class Matcher {
 
     static fromHand(hand: Card[], trick: Play[], declared: Card) {
         return new Matcher(countAsMap(hand), trick, declared);
+    }
+
+    static initialThrow(hand: Card[], maxMultiplicity: number, declared: Card) {
+        return new Matcher(countAsMap(hand), [
+            // Card here doesn't matter as it's a placeholder.
+            new Play('2C', maxMultiplicity, Math.ceil(hand.length / maxMultiplicity))],
+            declared, true);
     }
 }

@@ -90,6 +90,9 @@ export function selectableCards(hand: Card[], selection: Card[], trick: Play[], 
             // console.log('possibility passed', possibility)
             tempSelectable.forEach(c => selectable.add(c));
         });
+        // if (selectable.length === 0) {
+        //     this.currentPlayer.selectedPlay = ???
+        // }
         return selectable;
     } else {
         const leftover = n - suitedCards.length;
