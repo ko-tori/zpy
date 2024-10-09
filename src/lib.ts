@@ -3,7 +3,27 @@ import { Card, BasicSuit, getSuit } from './Card';
 import { Matcher, sortPossibilities } from './Matcher';
 import { countAsMap } from './util';
 
+function selectableCardsStart(hand: Card[], selection: Card[], declared: Card) {
+    if (selection.length) {
+        const suit: BasicSuit | 'T' = getSuit(selection[0], declared);
+        return hand.filter(card => getSuit(card, declared) === suit);
+    } else {
+        return hand;
+    }
+}
+
+/**
+ * Given a player's hand, their currently selected cards, the starting trick, and the declared card,
+ * determine which cards they are allowed to add to their selection.
+ * This function should be called again each time the selection changes to remain accurate.
+ * @param hand The current player's hand.
+ * @param selection The player's currently selected cards.
+ * @param trick The current starting trick.
+ * @param declared The current declared card.
+ * @returns A set of cards which are allowed as a next selection.
+ */
 export function selectableCards(hand: Card[], selection: Card[], trick: Play[], declared: Card) {
+    if (!trick.length) return selectableCardsStart(hand, selection, declared);
     const n = trick.reduce((t, p) => t + p.size, 0);
     const suit: BasicSuit | 'T' = trick[0].getSuit(declared);
     const suitedCards = hand.filter(card => getSuit(card, declared) === suit);

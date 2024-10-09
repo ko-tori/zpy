@@ -1,5 +1,14 @@
 import { Card, nextLargest, getSuit, compareCards } from './Card';
 
+/**
+ * Represents one group of cards, e.g. singles, pairs, triples, and tractors.
+ * These groups can be described by their lowest card `c`, multiplicity `m`, and length `l`.
+ * Multiplicity and length default to 1 if not specified.
+ * Examples:
+ * - Single Ace of Clubs => `{c: 'AC'}`
+ * - Pair of King of Diamonds => `{c: 'KD', m: 2}`
+ * - 2233 of Spades Tractor => `{c: '2S', m: 2, l: 2}`
+ */
 export class Play {
     constructor(private c: Card, private m?: number, private l?: number) {
         if (m !== undefined && m < 1) {
@@ -15,6 +24,17 @@ export class Play {
         if (l === 1) this.l = undefined;
     }
 
+    /**
+     * Gets an array of cards which the current play represents.
+     * Examples (3C declared): 
+     * - Single Ace of Clubs => `{c: 'AC'}` => `['AC']`
+     * - Pair of King of Diamonds => `{c: 'KD', m: 2}` => `['KD', 'KD']`
+     * - 2233 of Spades Tractor => `{c: '2S', m: 2, l: 2}` => `['2C', '2C', '3C', '3C']`
+     * - 2244 of Clubs Tractor => `{c: '2C', m: 2, l: 2}` => `['2C', '2C', '4C', '4C']`
+     * - Big tractor => `{c: '3C', m: 2, l: 3}` => `['3C', '3C', 'SJ', 'SJ', 'BJ', 'BJ']`
+     * @param declared The currently declared card.
+     * @returns An array of the cards in the current play.
+     */
     getCards(declared: Card) {
         const cards: Card[] = [];
         let curCard: Card | null = this.c;

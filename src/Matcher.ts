@@ -6,8 +6,17 @@ interface Shape {
     m: number;
     l: number;
 }
+
+/**
+ * Encapsulates a possible play. Either it's a specific play, or a type of play without a specific card.
+ */
 export type Possibility = Play | Shape;
 
+/**
+ * Sorts an array of type `Possibility[]` from largest to smallest.
+ * This should ensure that `Shape`s end up at the end.
+ * @param possibilities Possibilities to sort.
+ */
 export function sortPossibilities(possibilities: Possibility[]) {
     possibilities.sort((p1, p2) => {
         const m1 = p1 instanceof Play ? p1.multiplicity : p1.m;
@@ -50,6 +59,10 @@ export function computeNeeds(M: number, L: number, m: number, l: number) {
     return needs;
 }
 
+/**
+ * This class contains utilities to calculate all possible plays from a hand somewhat efficiently.
+ * This is important to detemine what cards can be selectable.
+ */
 export class Matcher {
     private handStructure: Map<Card, number>[][];
     private trick: Play[];
