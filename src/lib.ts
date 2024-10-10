@@ -36,7 +36,7 @@ export function selectableCards(hand: Card[], selection: Card[], trick: Play[], 
             const selectionCountCopy = new Map(selectionCount);
             const suitedCardsCount = countAsMap(suitedCards);
             const tempSelectable = new Set<Card>();
-            sortPossibilities(possibility);
+            sortPossibilities(possibility, declared);
             let fulfilled = true;
             for (const play of possibility) {
                 // console.log('analyzing play', play, selectionCountCopy, suitedCardsCount)

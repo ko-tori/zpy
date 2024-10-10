@@ -91,9 +91,34 @@ export class Play {
      * - Other combinations are tiebroken by size (multiplicity x length).
      * - If there is still a tie (e.g. 2x3 vs. 3x2), multiplicity tiebreaks.
      */
-    static sortPlays(plays: Play[]) {
+    static sortPlays(plays: Play[], declared?: Card) {
         return plays.toSorted((p1, p2) => {
-            return p1.size - p2.size || p1.multiplicity - p2.multiplicity || compareCards(p1.c, p2.c);
+            return p1.size - p2.size || p1.multiplicity - p2.multiplicity || compareCards(p1.c, p2.c, declared);
         });
+    }
+
+    /**
+     * Calculates which play would be winning with `p1` played first.
+     * @param p1 The current winning play.
+     * @param p2 The following play.
+     * @returns `true` if `p1` remains the winning play, `false` otherwise.
+     */
+    static winsAgainst(p1: Play[], p2: Play[], declared: Card) {
+        if (p1.length !== p2.length) return true;
+        const s1 = p1[0].getSuit(declared);
+        for (let i = 0; i < p1.length; i++) {
+            if (p1[i].multiplicity !== p2[i].multiplicity || p1[i].length !== p2[i].length) {
+                return true;
+            } else {
+                const s2 = p2[i].getSuit(declared);
+                if (s1 !== s2 && s2 !== 'T') {
+                    return true;
+                }
+                if (s1 === s2 && compareCards(p1[i].card, p2[i].card, declared) >= 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

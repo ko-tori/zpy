@@ -17,7 +17,7 @@ export type Possibility = Play | Shape;
  * This should ensure that `Shape`s end up at the end.
  * @param possibilities Possibilities to sort.
  */
-export function sortPossibilities(possibilities: Possibility[]) {
+export function sortPossibilities(possibilities: Possibility[], declared?: Card) {
     possibilities.sort((p1, p2) => {
         const m1 = p1 instanceof Play ? p1.multiplicity : p1.m;
         const m2 = p2 instanceof Play ? p2.multiplicity : p2.m;
@@ -25,7 +25,7 @@ export function sortPossibilities(possibilities: Possibility[]) {
         const l2 = p2 instanceof Play ? p2.length : p2.l;
         const comp = m2 * l2 - m1 * l1 || m2 - m1;
         if (comp === 0 && p1 instanceof Play && p2 instanceof Play) {
-            return compareCards(p2.card, p1.card);
+            return compareCards(p2.card, p1.card, declared);
         }
         return comp;
     });
@@ -68,7 +68,7 @@ export class Matcher {
     private trick: Play[];
 
     constructor(private counts: Map<Card, number>, trick: Play[], private declared: Card, private initial = false) {
-        this.trick = Play.sortPlays(trick);
+        this.trick = Play.sortPlays(trick, declared);
         const maxTrick = this.trick[this.trick.length - 1];
         const dp: Map<Card, number>[][] = Array(maxTrick.multiplicity - 1).fill(null).map(() => Array(maxTrick.length).fill([]));
 
@@ -162,7 +162,7 @@ export class Matcher {
         // console.log(`found possible plays for ${temp.multiplicity}x${temp.length}`, plays);
         const minSize = Math.min(...plays.map(p => p.length));
         const possibilities = plays.filter(p => p.length === minSize);
-        return this.initial ? [Play.sortPlays(possibilities[0] as Play[]).reverse()] : possibilities;
+        return this.initial ? [Play.sortPlays(possibilities[0] as Play[], this.declared).reverse()] : possibilities;
     }
 
     private getEntry(m: number, l: number) {

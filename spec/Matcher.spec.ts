@@ -110,5 +110,51 @@ describe('getPossibilities', () => {
             const m = Matcher.initialThrow(['6S', '7S', '6S', '6S', 'SJ', 'SJ', 'SJ', 'BJ', 'BJ', 'BJ'], 3, '2S');
             expect(m.getPossibilities()).toEqual([[new Play('SJ', 3, 2), new Play('6S', 3), new Play('7S')]]);
         });
-    })
+        it('big example', () => {
+            const m = Matcher.initialThrow(createSuitedHand('33334445556778999TTJQKKKAAAA'), 4, '2S');
+            expect(m.getPossibilities()).toEqual([
+                [
+                    new Play('3C', 3, 3),
+                    new Play('KC', 3, 2),
+                    new Play('9C', 2, 2),
+                    new Play('7C', 2),
+                    new Play('AC'),
+                    new Play('QC'),
+                    new Play('JC'),
+                    new Play('9C'),
+                    new Play('8C'),
+                    new Play('6C'),
+                    new Play('3C')
+                ]
+            ]);
+        });
+    });
+
+    describe('winsAgainst -', () => {
+        it('should work with mismatched response', () => {
+            expect(Play.winsAgainst([new Play('4C', 2), new Play('5C', 1)], [new Play('AC', 1), new Play('KC', 1), new Play('4C', 1)], '2S')).toBe(true);
+        });
+        it('should work with partially off suit response', () => {
+            expect(Play.winsAgainst([new Play('4C', 2), new Play('5C', 1)], [new Play('3C', 2), new Play('4H', 1)], '2S')).toBe(true);
+        });
+        it('should work with fully off suit response', () => {
+            expect(Play.winsAgainst([new Play('2C', 2), new Play('3C', 1)], [new Play('6H', 1), new Play('5H', 1), new Play('4H', 1)], '2S')).toBe(true);
+        });
+        it('should work with matching but lower response', () => {
+            expect(Play.winsAgainst([new Play('AC', 2), new Play('KC', 1)], [new Play('3C', 2), new Play('4C', 1)], '2S')).toBe(true);
+        });
+        it('should work with matching and higher response', () => {
+            expect(Play.winsAgainst([new Play('3C', 2, 2)], [new Play('KC', 2, 2)], '2S')).toBe(false);
+        });
+        it('should work with trump response', () => {
+            expect(Play.winsAgainst([new Play('AC', 2), new Play('KC', 1)], [new Play('3S', 2), new Play('SJ', 1)], '2S')).toBe(false);
+        });
+        it('should work trump vs trump', () => {
+            expect(Play.winsAgainst([new Play('AS', 2)], [new Play('2C', 2)], '2S')).toBe(false);
+            expect(Play.winsAgainst([new Play('2S', 2)], [new Play('SJ', 2)], '2S')).toBe(false);
+            expect(Play.winsAgainst([new Play('2H', 2)], [new Play('SJ', 2)], '2S')).toBe(false);
+            expect(Play.winsAgainst([new Play('2H', 2)], [new Play('3S', 2)], '2S')).toBe(true);
+            expect(Play.winsAgainst([new Play('BJ', 2)], [new Play('SJ', 2)], '2S')).toBe(true);
+        });
+    });
 });
