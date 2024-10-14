@@ -1,6 +1,6 @@
 import { SETTINGS } from './settings';
 
-const SUITS = ['S', 'H', 'D', 'C', 'J'] as const;
+const SUITS = ['C', 'D', 'S', 'H', 'J'] as const;
 type Suit = typeof SUITS[number];
 const NUMS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'S', 'B'] as const;
 type Num = typeof NUMS[number];
@@ -74,14 +74,15 @@ export function parseCard(card: Card): [Num, Suit] {
     return [card.substring(0, card.length - 1) as Num, card.charAt(card.length - 1) as Suit];
 }
 
-export function isPoints(card: Card) {
-    const [n, _] = parseCard(card);
-    return n === '5' || n === '10' || n === 'K';
+export function getPointValue(card: Card) {
+    const [num, _] = parseCard(card);
+    return num === '5' ? 5 : (num === '10' || num === 'K' ? 10 : 0);
 }
 
 /**
  * Compare two cards. Can be used to sort an array of suited cards with arr.sort(compareCards).
- * Considers cards of separate suits to be equal, so make sure the inputs are suited.
+ * Considers cards of separate suits to be equal, so make sure the inputs are suited
+ * Returns positive if `c1` is larger.
  * @param c1 
  * @param c2 
  * @returns 
@@ -93,16 +94,16 @@ export function compareCards(c1: Card, c2: Card, declared?: Card) {
         const vs1 = getSuit(c1, declared);
         const vs2 = getSuit(c2, declared);
         if (vs1 !== 'T' && vs2 === 'T') {
-            return 1;
-        } else if (vs1 === 'T' && vs2 !== 'T') {
             return -1;
+        } else if (vs1 === 'T' && vs2 !== 'T') {
+            return 1;
         } else if (vs1 === 'T' && vs2 === 'T') {
             const [dn, _] = parseCard(declared);
             const i1 = dn === n1 ? NUMS.indexOf('A') + 0.5 : NUMS.indexOf(n1);
             const i2 = dn === n2 ? NUMS.indexOf('A') + 0.5 : NUMS.indexOf(n2);
             return i1 - i2;
         } else {
-            return vs1 === vs2 ? NUMS.indexOf(n1) - NUMS.indexOf(n2) : 0;
+            return vs1 === vs2 ? NUMS.indexOf(n1) - NUMS.indexOf(n2) : SUITS.indexOf(s1) - SUITS.indexOf(s2);
         }
     }
     return s1 === s2 ? NUMS.indexOf(n1) - NUMS.indexOf(n2) : 0;

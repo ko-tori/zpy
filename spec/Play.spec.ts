@@ -3,13 +3,13 @@ import { Play } from '../src/Play';
 describe('Play -', () => {
     describe('constructor -', () => {
         it('should fail for m < 1', () => {
-            expect(() => new Play('3S', 0)).toThrow(new TypeError('Cannot have multiplicity < 1.'));
+            expect(() => new Play('3S', 0)).toThrowError('Cannot have multiplicity < 1.');
         });
         it('should fail for l < 1', () => {
-            expect(() => new Play('3S', 2, 0)).toThrow(new TypeError('Cannot have length < 1.'));
+            expect(() => new Play('3S', 2, 0)).toThrowError('Cannot have length < 1.');
         });
         it('should fail for tractors for multiplicity 1', () => {
-            expect(() => new Play('3S', 1, 2)).toThrow(new TypeError('Cannot have tractors of multiplicity 1.'));
+            expect(() => new Play('3S', 1, 2)).toThrowError('Cannot have tractors of multiplicity 1.');
         });
         it('should serialize nicely', () => {
             const t = new Play('KS');
@@ -109,19 +109,19 @@ describe('Play -', () => {
             });
             it('should fail if out of range', () => {
                 const t = new Play('KS', 2, 3);
-                expect(() => t.getCards('2C')).toThrow(new RangeError('Play goes out of range.'))
+                expect(() => t.getCards('2C')).toThrowError('Play goes out of range.');
             });
             it('should fail if out of range (A declared, not trump)', () => {
                 const t = new Play('KS', 2, 2);
-                expect(() => t.getCards('AC')).toThrow(new RangeError('Play goes out of range.'))
+                expect(() => t.getCards('AC')).toThrowError('Play goes out of range.');
             });
             it('should fail if out of range (jokers)', () => {
                 const t = new Play('SJ', 2, 3);
-                expect(() => t.getCards('2S')).toThrow(new RangeError('Play goes out of range.'))
+                expect(() => t.getCards('2S')).toThrowError('Play goes out of range.');
             });
             it('should fail for non suited trump', () => {
                 const t = new Play('2S', 2, 2);
-                expect(() => t.getCards('2H')).toThrow(new RangeError('Play goes out of range.'))
+                expect(() => t.getCards('2H')).toThrowError('Play goes out of range.');
             });
         });
     });
@@ -148,6 +148,34 @@ describe('Play -', () => {
                 new Play('9C', 3, 2),
                 new Play('QC', 3, 3),
             ]);
+        });
+    });
+
+    describe('winsAgainst -', () => {
+        it('should work with mismatched response', () => {
+            expect(Play.winsAgainst([new Play('4C', 2), new Play('5C', 1)], [new Play('AC', 1), new Play('KC', 1), new Play('4C', 1)], '2S')).toBe(true);
+        });
+        it('should work with partially off suit response', () => {
+            expect(Play.winsAgainst([new Play('4C', 2), new Play('5C', 1)], [new Play('3C', 2), new Play('4H', 1)], '2S')).toBe(true);
+        });
+        it('should work with fully off suit response', () => {
+            expect(Play.winsAgainst([new Play('2C', 2), new Play('3C', 1)], [new Play('6H', 1), new Play('5H', 1), new Play('4H', 1)], '2S')).toBe(true);
+        });
+        it('should work with matching but lower response', () => {
+            expect(Play.winsAgainst([new Play('AC', 2), new Play('KC', 1)], [new Play('3C', 2), new Play('4C', 1)], '2S')).toBe(true);
+        });
+        it('should work with matching and higher response', () => {
+            expect(Play.winsAgainst([new Play('3C', 2, 2)], [new Play('KC', 2, 2)], '2S')).toBe(false);
+        });
+        it('should work with trump response', () => {
+            expect(Play.winsAgainst([new Play('AC', 2), new Play('KC', 1)], [new Play('3S', 2), new Play('SJ', 1)], '2S')).toBe(false);
+        });
+        it('should work trump vs trump', () => {
+            expect(Play.winsAgainst([new Play('AS', 2)], [new Play('2C', 2)], '2S')).toBe(false);
+            expect(Play.winsAgainst([new Play('2S', 2)], [new Play('SJ', 2)], '2S')).toBe(false);
+            expect(Play.winsAgainst([new Play('2H', 2)], [new Play('SJ', 2)], '2S')).toBe(false);
+            expect(Play.winsAgainst([new Play('2H', 2)], [new Play('3S', 2)], '2S')).toBe(true);
+            expect(Play.winsAgainst([new Play('BJ', 2)], [new Play('SJ', 2)], '2S')).toBe(true);
         });
     });
 });

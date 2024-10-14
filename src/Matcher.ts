@@ -31,6 +31,21 @@ export function sortPossibilities(possibilities: Possibility[], declared?: Card)
     });
 }
 
+export function matchesPossibility(play: Play[], possibility: Possibility[], declared: Card) {
+    play = Play.sortPlays(play).reverse();
+    sortPossibilities(possibility);
+    if (play.length !== possibility.length) return false;
+    for (let i = 0; i < play.length; i++) {
+        const poss = possibility[i];
+        if (poss instanceof Play) {
+            if (play[i].multiplicity !== poss.multiplicity || play[i].length !== poss.length) return false;
+        } else {
+            if (play[i].multiplicity !== poss.m || play[i].length !== poss.l) return false;
+        }
+    }
+    return true;
+}
+
 /**
  * Assumes (m,l) fits (M,L) shape.
  * Example: 3, 3, 2, 2 => [[3, 1],[1,1],[1,1]]
@@ -170,6 +185,18 @@ export class Matcher {
             return this.counts;
         }
         return this.handStructure[m - 2][l - 1];
+    }
+
+    beatsTrick() {
+        if (this.trick.length !== 1) throw new Error('Can only be called if trick is single play.');
+        const [m, l] = this.getBest();
+        const p = this.trick[0];
+        if (m !== this.trick[0].multiplicity || l !== this.trick[0].length) return false;
+        for (const [card, _] of this.getEntry(m, l)) {
+            const c = compareCards(card, p.card, this.declared);
+            if (c > 0) return true;
+        }
+        return false;
     }
 
     private getBest() {

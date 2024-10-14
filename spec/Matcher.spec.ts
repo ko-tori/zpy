@@ -130,31 +130,26 @@ describe('getPossibilities', () => {
         });
     });
 
-    describe('winsAgainst -', () => {
-        it('should work with mismatched response', () => {
-            expect(Play.winsAgainst([new Play('4C', 2), new Play('5C', 1)], [new Play('AC', 1), new Play('KC', 1), new Play('4C', 1)], '2S')).toBe(true);
+    describe('beatsTrick -', () => {
+        it('should work for non-trump winning', () => {
+            expect(Matcher.fromHand(createSuitedHand('AA534'), [new Play('KC', 2)], '2H').beatsTrick()).toBe(true);
         });
-        it('should work with partially off suit response', () => {
-            expect(Play.winsAgainst([new Play('4C', 2), new Play('5C', 1)], [new Play('3C', 2), new Play('4H', 1)], '2S')).toBe(true);
+        it('should work for non-trump losing', () => {
+            expect(Matcher.fromHand(createSuitedHand('34455'), [new Play('KC', 2)], '2H').beatsTrick()).toBe(false);
         });
-        it('should work with fully off suit response', () => {
-            expect(Play.winsAgainst([new Play('2C', 2), new Play('3C', 1)], [new Play('6H', 1), new Play('5H', 1), new Play('4H', 1)], '2S')).toBe(true);
+        it('should work for non-trump winning with some losing', () => {
+            expect(Matcher.fromHand(createSuitedHand('34455AA'), [new Play('KC', 2)], '2H').beatsTrick()).toBe(true);
         });
-        it('should work with matching but lower response', () => {
-            expect(Play.winsAgainst([new Play('AC', 2), new Play('KC', 1)], [new Play('3C', 2), new Play('4C', 1)], '2S')).toBe(true);
+        it('should work for trump winning', () => {
+            expect(Matcher.fromHand(['BJ', 'SJ', 'SJ'], [new Play('KC', 2)], '2C').beatsTrick()).toBe(true);
+            expect(Matcher.fromHand(['BJ', 'SJ', 'SJ'], [new Play('2C', 1)], '2C').beatsTrick()).toBe(true);
+            expect(Matcher.fromHand(['BJ', 'SJ', 'SJ'], [new Play('SJ', 1)], '2C').beatsTrick()).toBe(true);
         });
-        it('should work with matching and higher response', () => {
-            expect(Play.winsAgainst([new Play('3C', 2, 2)], [new Play('KC', 2, 2)], '2S')).toBe(false);
+        it('should work for trump losing', () => {
+            expect(Matcher.fromHand(createSuitedHand('34455'), [new Play('SJ', 2)], '2C').beatsTrick()).toBe(false);
         });
-        it('should work with trump response', () => {
-            expect(Play.winsAgainst([new Play('AC', 2), new Play('KC', 1)], [new Play('3S', 2), new Play('SJ', 1)], '2S')).toBe(false);
-        });
-        it('should work trump vs trump', () => {
-            expect(Play.winsAgainst([new Play('AS', 2)], [new Play('2C', 2)], '2S')).toBe(false);
-            expect(Play.winsAgainst([new Play('2S', 2)], [new Play('SJ', 2)], '2S')).toBe(false);
-            expect(Play.winsAgainst([new Play('2H', 2)], [new Play('SJ', 2)], '2S')).toBe(false);
-            expect(Play.winsAgainst([new Play('2H', 2)], [new Play('3S', 2)], '2S')).toBe(true);
-            expect(Play.winsAgainst([new Play('BJ', 2)], [new Play('SJ', 2)], '2S')).toBe(true);
+        it('should work for trump winning with some losing', () => {
+            expect(Matcher.fromHand(createSuitedHand('34AA455'), [new Play('KC', 2)], '2C').beatsTrick()).toBe(true);
         });
     });
 });
