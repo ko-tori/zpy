@@ -47,6 +47,8 @@ export interface RoundResult {
     winners: number[];
     levelChange: number;
     gameWinners: number[];
+    points: number;
+    bottom: Card[];
 }
 
 export interface RejectedThrow {
@@ -114,7 +116,7 @@ export class GameState {
         return card;
     }
 
-    declare(player: number, card: Card, amount: number): Declaration {
+    declare(player: number, card: Card, amount = 1): Declaration {
         if (this.phase !== 'deal') throw new Error('Can only declare in deal phase.');
         if (parseCard(card)[0] !== this.players[player].rank) throw new Error('Player trying to declare out of rank.');
         if (SETTINGS.winnersDeclare && this.winners.indexOf(player) === -1) throw new Error('Only winners may declare.');
@@ -182,6 +184,7 @@ export class GameState {
                 if (c === friend.card) {
                     if (friend.nth === 1) {
                         this.friends.add(this.currentTurn);
+                        this.currentPlayer.points = [];
                     } else {
                         friend.nth -= 1;
                     }
@@ -305,7 +308,7 @@ export class GameState {
                 gameWinners.push(p);
             }
         }
-        return { winners, levelChange, gameWinners };
+        return { winners, levelChange, gameWinners, points, bottom: this.bottom };
     }
 
     private incrementTurn() {
