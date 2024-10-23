@@ -6,7 +6,7 @@ type Num = typeof NUMS[number];
 export const BASIC_NUMS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
 /** The basic number type. */
 export type BasicNum = typeof BASIC_NUMS[number];
-const BASIC_SUITS = ['C', 'D', 'S', 'H'] as const;
+export const BASIC_SUITS = ['C', 'D', 'S', 'H'] as const;
 /** The basic suit type. */
 export type BasicSuit = typeof BASIC_SUITS[number];
 /** The basic card type. Includes small and big joker. */
@@ -162,4 +162,9 @@ export function getSuit(card: Card, declared: Card) {
     const [num, suit] = parseCard(card);
     const [big, trump] = parseCard(declared);
     return suit === 'J' || suit === trump || num === big ? 'T' : suit;
+}
+
+/** Returns a random suit. */
+export function randomSuit() {
+    return BASIC_SUITS[Math.floor(Math.random() * 4)];
 }
