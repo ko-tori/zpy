@@ -121,4 +121,9 @@ export class Play {
         }
         return false;
     }
+
+    static parse(s: string) {
+        const o = JSON.parse(s);
+        return new Play(o.c, o.m, o.l);
+    }
 }
