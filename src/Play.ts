@@ -35,7 +35,7 @@ export class Play {
      * @param declared The currently declared card.
      * @returns An array of the cards in the current play.
      */
-    getCards(declared: Card) {
+    getCards(declared: Card, wrap = true) {
         const cards: Card[] = [];
         let curCard: Card | null = this.c;
 
@@ -46,17 +46,17 @@ export class Play {
             for (let j = 0; j < (this.multiplicity); j++) {
                 cards.push(curCard);
             }
-            curCard = nextLargest(curCard, declared, i === 0);
+            curCard = nextLargest(curCard, declared, wrap && i === 0);
         }
         return cards;
     }
 
     /** For tractors, the next card which would extend the tractor. */
-    nextLargest(declared: Card, wrap = false) {
+    nextLargest(declared: Card, wrap = true) {
         let c: Card | null = this.c;
         for (let i = 0; i < this.length; i++) {
             if (!c) return null;
-            c = nextLargest(c, declared, wrap);
+            c = nextLargest(c, declared, wrap && i === 0);
         }
         return c;
     }

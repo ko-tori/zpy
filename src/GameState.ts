@@ -1,5 +1,5 @@
 import { Card, createDeck, BasicNum, BASIC_NUMS, parseCard, getPointValue, getSuit, compareCards } from "./Card";
-import { Settings, updateSettings, settingsInvalid, SETTINGS } from "./settings";
+import { Settings, DEFAULT_SETTINGS } from "./settings";
 import { Play } from './Play';
 import { Matcher, matchesPossibility } from "./Matcher";
 import { countAsMap } from "./util";
@@ -62,8 +62,11 @@ export interface TrickResult {
 
 export type PlayResult = RoundResult | RejectedThrow | TrickResult | null;
 
+
+
 export class GameState {
     /** The phase of the game. Starts with score and waits for `startRound` to change to `'deal'`. */
+    public settings: Settings = Object.create(DEFAULT_SETTINGS);
     public phase: GamePhase = 'score';
     public deck: Card[] = [];
     public players: Player[];
@@ -79,21 +82,40 @@ export class GameState {
     public currentTrick: Play[][] = [];
 
     constructor(settings: Partial<Settings>) {
-        updateSettings(settings);
-        const settingsError = settingsInvalid();
+        this.updateSettings(settings);
+        const settingsError = this.checkSettingsForErrors();
         if (settingsError) throw new Error(settingsError);
-        this.players = new Array(SETTINGS.numPlayers).fill(null).map(p => new Player());
+        this.players = new Array(this.settings.numPlayers).fill(null).map(_ => new Player());
         this.winners = this.players.map((_, i) => i);
-        if (!SETTINGS.bottomSize) {
-            let bottomSize = ((54 * SETTINGS.numDecks) % SETTINGS.numPlayers);
-            while (bottomSize < 6 - SETTINGS.numPlayers / 2) {
-                bottomSize += SETTINGS.numPlayers;
+        if (!this.settings.bottomSize) {
+            let bottomSize = ((54 * this.settings.numDecks) % this.settings.numPlayers);
+            while (bottomSize < 6 - this.settings.numPlayers / 2) {
+                bottomSize += this.settings.numPlayers;
             }
             this.bottomSize = bottomSize;
         } else {
-            this.bottomSize = SETTINGS.bottomSize;
+            this.bottomSize = this.settings.bottomSize;
         }
-        this.teamSize = SETTINGS.teamSize ?? Math.floor(SETTINGS.numPlayers / 2);
+        this.teamSize = this.settings.teamSize ?? Math.floor(this.settings.numPlayers / 2);
+    }
+
+    reset() {
+        Object.assign(this, new GameState(this.settings));
+    }
+
+    updateSettings(settings: Partial<Settings>) {
+        Object.assign(this.settings, settings);
+    }
+
+    checkSettingsForErrors() {
+        if (this.settings.numDecks === 0) return 'Must not have 0 decks.';
+        if (this.settings.numPlayers < 2) return 'Must have at least 2 players.'
+        if (this.settings.bottomSize && (this.settings.numDecks * 54 - this.settings.bottomSize) % this.settings.numPlayers) return 'Invalid bottom size.';
+        return '';
+    }
+
+    resetSettings() {
+        Object.assign(this, DEFAULT_SETTINGS);
     }
 
     startRound() {
@@ -101,7 +123,7 @@ export class GameState {
         this.phase = 'deal';
         this.bottom = [];
         this.friends = new Set();
-        this.deck = createDeck();
+        this.deck = createDeck(this.settings.numDecks);
         this.declarations = [];
         this.players.forEach(p => p.newRound());
     }
@@ -119,7 +141,7 @@ export class GameState {
     declare(player: number, card: Card, amount = 1): Declaration {
         if (this.phase !== 'deal') throw new Error('Can only declare in deal phase.');
         if (parseCard(card)[0] !== this.players[player].rank) throw new Error('Player trying to declare out of rank.');
-        if (SETTINGS.winnersDeclare && this.winners.indexOf(player) === -1) throw new Error('Only winners may declare.');
+        if (this.settings.winnersDeclare && this.winners.indexOf(player) === -1) throw new Error('Only winners may declare.');
         if (this.players[player].hand.filter(c => c === card).length < amount) throw new Error('Player trying to declare with cards they don\'t have.');
         const prevDeclaration = this.declarations[this.declarations.length - 1];
         if (prevDeclaration) {
@@ -235,7 +257,7 @@ export class GameState {
         const playNumSuitedCards = play.filter(p => p.getSuit(this.declared!) === suit).reduce((a, p) => a + p.size, 0);
         if (suitedCards.length > trickSize) {
             if (playNumSuitedCards !== trickSize) return false;
-            for (const possibility of Matcher.fromHand(suitedCards, this.currentTrick[0], this.declared!).getPossibilities()) {
+            for (const possibility of Matcher.fromHand(suitedCards, this.currentTrick[0], this.declared!, this.settings.wraparound).getPossibilities()) {
                 if (matchesPossibility(play, possibility, this.declared!)) return true;
             }
             return false;
@@ -249,7 +271,7 @@ export class GameState {
             const suit = getSuit(p.card, this.declared!);
             for (let i = 1; i < n; i++) {
                 const suitedCards = this.players[(this.currentTurn + i) % n].hand.filter(c => getSuit(c, this.declared!) === suit);
-                if (Matcher.fromHand(suitedCards, [p], this.declared!).beatsTrick()) {
+                if (Matcher.fromHand(suitedCards, [p], this.declared!, this.settings.wraparound).beatsTrick()) {
                     return p;
                 }
             }
@@ -276,7 +298,7 @@ export class GameState {
     }
 
     private calculateScore(): RoundResult {
-        const cutoff = SETTINGS.numDecks * SETTINGS.cutoffPerDeck;
+        const cutoff = this.settings.numDecks * this.settings.cutoffPerDeck;
         let points = 0;
         const defenders = [];
         for (let i = 0; i < this.players.length; i++) {
@@ -289,7 +311,7 @@ export class GameState {
         }
         if (!this.friends.has(this.currentTurn)) {
             for (const card of this.bottom) {
-                points += getPointValue(card) * SETTINGS.bottomMultiplier;
+                points += getPointValue(card) * this.settings.bottomMultiplier;
             }
         }
         let multiplier = 1;
@@ -312,7 +334,7 @@ export class GameState {
     }
 
     private incrementTurn() {
-        this.currentTurn = (this.currentTurn + 1) % SETTINGS.numPlayers;
+        this.currentTurn = (this.currentTurn + 1) % this.settings.numPlayers;
     }
 
     private validateSelection(cards: Card[], player = this.currentTurn) {

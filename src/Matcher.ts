@@ -82,7 +82,7 @@ export class Matcher {
     private handStructure: Map<Card, number>[][];
     private trick: Play[];
 
-    constructor(private counts: Map<Card, number>, trick: Play[], private declared: Card, private initial = false) {
+    constructor(private counts: Map<Card, number>, trick: Play[], private declared: Card, private initial = false, private wrap = true) {
         this.trick = Play.sortPlays(trick, declared);
         const maxTrick = this.trick[this.trick.length - 1];
         const dp: Map<Card, number>[][] = Array(maxTrick.multiplicity - 1).fill(null).map(() => Array(maxTrick.length).fill([]));
@@ -103,7 +103,7 @@ export class Matcher {
                 const prev = dp[m - 2][l - 2];
                 const entry = new Map<Card, number>();
                 prev.forEach((count, card) => {
-                    const nextCard = new Play(card, m, l - 1).nextLargest(this.declared, l === 2);
+                    const nextCard = new Play(card, m, l - 1).nextLargest(this.declared, this.wrap && l === 2);
                     if (!nextCard) return;
                     const nextCardCt = first.get(nextCard);
                     if (nextCardCt) {
@@ -229,21 +229,21 @@ export class Matcher {
             // console.log('returning', play);
             return [[play]];
         } else {
-            const newMatcher = new Matcher(newCounts, newTrick, this.declared, this.initial);
+            const newMatcher = new Matcher(newCounts, newTrick, this.declared, this.initial, this.wrap);
             const possibilities = newMatcher.getPossibilities();
             // console.log('possibilities', possibilities);
             return possibilities.map(possibility => [play as Possibility].concat(possibility));
         }
     }
 
-    static fromHand(hand: Card[], trick: Play[], declared: Card) {
-        return new Matcher(countAsMap(hand), trick, declared);
+    static fromHand(hand: Card[], trick: Play[], declared: Card, wrap = true) {
+        return new Matcher(countAsMap(hand), trick, declared, false, wrap);
     }
 
-    static initialThrow(hand: Card[], maxMultiplicity: number, declared: Card) {
+    static initialThrow(hand: Card[], maxMultiplicity: number, declared: Card, wrap = true) {
         return new Matcher(countAsMap(hand), [
             // Card here doesn't matter as it's a placeholder.
             new Play('2C', maxMultiplicity, Math.ceil(hand.length / maxMultiplicity))],
-            declared, true);
+            declared, true, wrap);
     }
 }

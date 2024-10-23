@@ -1,19 +1,17 @@
 import { GameState } from "../src/GameState";
 import { Play } from "../src/Play";
-import { resetSettings, SETTINGS } from "../src/settings";
 import { TEST_DECK_FACTORY } from "./util";
 
 describe('Simulate full game -', () => {
     it('should work', () => {
-        resetSettings();
         const gameState = new GameState({ numDecks: 2, numPlayers: 5 });
 
         // phase should start as 'score'
         expect(gameState.phase).toBe('score');
 
         // settings should be set correctly
-        expect(SETTINGS.numDecks).toBe(2);
-        expect(SETTINGS.numPlayers).toBe(5);
+        expect(gameState.settings.numDecks).toBe(2);
+        expect(gameState.settings.numPlayers).toBe(5);
         expect(gameState.players.length).toBe(5)
         expect(gameState.bottomSize).toBe(8);
         expect(gameState.teamSize).toBe(2);
@@ -148,18 +146,10 @@ describe('Simulate full game -', () => {
         for (let i = 0; i < 90; i++) gameState.dealCard();
         expect(() => gameState.declare(3, '2H')).toThrowError('Only winners may declare.');
     });
-
-    afterAll(() => {
-        resetSettings();
-    });
 });
 
 describe('GameState', () => {
     describe('settingsInvalid -', () => {
-        beforeEach(() => {
-            resetSettings();
-        });
-
         it('should fail if required settings not initialized', () => {
             expect(() => new GameState({})).toThrowError('Must not have 0 decks.');
             expect(() => new GameState({ numDecks: 2 })).toThrowError('Must have at least 2 players.');
@@ -169,10 +159,6 @@ describe('GameState', () => {
         });
         it('should pass with valid bottom size', () => {
             expect(() => new GameState({ numDecks: 2, numPlayers: 5, bottomSize: 13 })).toBeDefined();
-        });
-
-        afterAll(() => {
-            resetSettings();
         });
     });
 });

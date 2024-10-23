@@ -1,5 +1,3 @@
-import { SETTINGS } from './settings';
-
 const SUITS = ['C', 'D', 'S', 'H', 'J'] as const;
 type Suit = typeof SUITS[number];
 const NUMS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'S', 'B'] as const;
@@ -17,9 +15,9 @@ export type Card = `${BasicNum}${BasicSuit}` | 'SJ' | 'BJ';
 /**
  * Create a shuffled deck using `SETTINGS.numDecks`.
  */
-export function createDeck() {
+export function createDeck(numDecks: number) {
     const deck: Card[] = [];
-    for (let i = 0; i < SETTINGS.numDecks; i++) {
+    for (let i = 0; i < numDecks; i++) {
         for (const n of BASIC_NUMS) {
             for (const s of BASIC_SUITS) {
                 deck.push(`${n}${s}`);
@@ -127,8 +125,7 @@ export function cardName(card: Card) {
  * @param wrap Whether to allow wraparound, e.g. A->2.
  * @returns The next largest card.
  */
-export function nextLargest(card: Card, declared: Card, wrap = false): Card | null {
-    if (!SETTINGS.wraparound) wrap = false;
+export function nextLargest(card: Card, declared: Card, wrap = true): Card | null {
     const [num, suit] = parseCard(card);
     const [big, _] = parseCard(declared);
 
